@@ -54,6 +54,9 @@ jobs:
 
       - name: Run Xbox input state-machine tests
         run: |
+          c++ -std=c++20 -Wall -Wextra -Werror tests/cloud_microphone_sdp_test.cpp -o /tmp/lunarnx-cloud-mic-sdp-test
+          /tmp/lunarnx-cloud-mic-sdp-test
+          python3 tests/cloud_microphone_integration_test.py
           make -f Makefile.desktop input_tests
           make -f Makefile.desktop xbox_input_accumulator_tests
           make -f Makefile.desktop outbound_queue_tests
@@ -126,6 +129,9 @@ jobs:
 
       - name: Run build regressions
         run: |
+          g++ -std=c++20 -Wall -Wextra -Werror tests/cloud_microphone_sdp_test.cpp -o /tmp/lunarnx-cloud-mic-sdp-test
+          /tmp/lunarnx-cloud-mic-sdp-test
+          python3 tests/cloud_microphone_integration_test.py
           python3 tests/xbox_stream_session_order_test.py
           python3 tests/xbox_stream_exit_cancellation_test.py
           python3 tests/ui_lifecycle_shutdown_test.py

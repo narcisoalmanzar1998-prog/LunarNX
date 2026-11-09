@@ -39,6 +39,8 @@ public:
     bool sendLatestInputData(const uint8_t* data, size_t len);
     bool sendControlData(const uint8_t* data, size_t len);
     bool sendMessageData(const uint8_t* data, size_t len);
+    bool sendAudioPacket(const uint8_t* opus, size_t len);
+    bool isAudioUplinkReady() const;
     bool requestVideoKeyframe();
     bool sendReceiverFeedback(uint32_t bitrate_bps);
     bool hasPendingReliableData() const;

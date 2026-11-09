@@ -20,6 +20,8 @@ struct StreamProfile {
     // Zero selects the resolution-based default (10 Mbps for 720p, 20 Mbps
     // for 1080p); callers can use 30000 for the 1080p HQ tier.
     int bitrate_kbps = 0;
+    // Explicit opt-in. Applied only when type == Cloud.
+    bool cloud_microphone_enabled = false;
     std::string os_name = "windows";
     std::string locale = "en-US";
     bool prefer_ipv6 = false;

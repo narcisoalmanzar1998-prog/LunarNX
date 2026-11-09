@@ -279,6 +279,11 @@ StreamSettingsSnapshot loadStreamSettings() {
     if (cJSON_IsBool(dithering)) settings.dithering_enabled = cJSON_IsTrue(dithering);
     const cJSON* vibration = cJSON_GetObjectItemCaseSensitive(root, "vibration");
     if (cJSON_IsBool(vibration)) settings.vibration_enabled = cJSON_IsTrue(vibration);
+    const cJSON* microphone =
+        cJSON_GetObjectItemCaseSensitive(root, "cloud_microphone_enabled");
+    if (cJSON_IsBool(microphone)) {
+        settings.cloud_microphone_enabled = cJSON_IsTrue(microphone);
+    }
     const cJSON* strength =
         cJSON_GetObjectItemCaseSensitive(root, "rumble_strength_percent");
     if (cJSON_IsNumber(strength)) {
@@ -308,6 +313,9 @@ bool saveStreamSettings(const StreamSettingsSnapshot& settings) {
     cJSON_AddBoolToObject(root, "dithering", settings.dithering_enabled);
     cJSON_DeleteItemFromObject(root, "vibration");
     cJSON_AddBoolToObject(root, "vibration", settings.vibration_enabled);
+    cJSON_DeleteItemFromObject(root, "cloud_microphone_enabled");
+    cJSON_AddBoolToObject(root, "cloud_microphone_enabled",
+                          settings.cloud_microphone_enabled);
     cJSON_DeleteItemFromObject(root, "rumble_strength_percent");
     cJSON_AddNumberToObject(root, "rumble_strength_percent",
                             settings.rumble_strength_percent);
@@ -475,6 +483,21 @@ brls::View* StreamSettingsActivity::createContentView() {
     }
 
     if (scope_ == StreamSettingsScope::Xbox) {
+    root->addView(makeSectionHeader(
+        brls::getStr("lunarnx/settings/cloud_microphone_section"),
+        brls::getStr("lunarnx/settings/cloud_microphone_detail")));
+    auto* microphone_card = makeUiCard();
+    microphone_card->setPadding(4, 8, 4, 8);
+    auto* microphone = new brls::BooleanCell();
+    microphone->init(brls::getStr("lunarnx/settings/cloud_microphone"),
+        settings_.cloud_microphone_enabled,
+        [this](bool enabled) {
+            settings_.cloud_microphone_enabled = enabled;
+            if (ctrl_) ctrl_->setCloudMicrophoneEnabled(enabled);
+        });
+    microphone_card->addView(microphone);
+    root->addView(microphone_card);
+
     root->addView(makeSectionHeader(
         brls::getStr("lunarnx/settings/controller_section"),
         brls::getStr("lunarnx/settings/controller_section_detail")));

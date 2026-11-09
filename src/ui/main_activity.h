@@ -63,6 +63,7 @@ private:
     stream::PostProcessMode post_process_mode_ = stream::PostProcessMode::Off;
     bool dithering_enabled_ = false;
     bool vibration_enabled_ = true;
+    bool cloud_microphone_enabled_ = false;
     int rumble_strength_percent_ = 50;
     std::chrono::steady_clock::time_point signout_press_time_{};
     std::atomic<bool> signout_pending_{false};

@@ -109,6 +109,7 @@ private:
     std::atomic<bool> input_delivery_ready_{false};
     std::atomic<bool> media_startup_ready_{false};
     std::atomic<bool> control_recovery_requested_{false};
+    bool cloud_microphone_negotiated_ = false;
     mutable std::mutex state_mutex_;
     std::mutex session_api_mutex_;
     std::mutex control_mutex_;

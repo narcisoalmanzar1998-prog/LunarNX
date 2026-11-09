@@ -4,6 +4,8 @@
 #include "video_recovery_request_policy.h"
 #include "video_watchdog_policy.h"
 #include "xbox_ice_preferences.h"
+#include "cloud_microphone_sdp.h"
+#include "../stream/cloud_microphone.h"
 #include "../diagnostics.h"
 #include "../webrtc/video_jitter_policy.h"
 
@@ -125,6 +127,9 @@ std::string offerForProfile(std::string offer, const StreamProfile& profile) {
         if (level != std::string::npos) {
             offer.replace(level + 17, 6, "42e020");
         }
+    }
+    if (profile.type == SessionType::Cloud && profile.cloud_microphone_enabled) {
+        offer = offerCloudMicrophoneAudio(std::move(offer));
     }
     return offer;
 }
@@ -686,6 +691,7 @@ bool XboxStreamSession::sleepUntilCancelled(
 bool XboxStreamSession::negotiateWebRtc(const StreamProfile& profile,
                                         const std::string& session_id,
                                         const RuntimeCallbacks& callbacks) {
+    cloud_microphone_negotiated_ = false;
     auto cancel = [this, callbacks]() { return isCancelled(callbacks); };
     auto sleep = [this, callbacks](std::chrono::milliseconds duration) {
         return sleepUnlessCancelled(duration, callbacks);
@@ -715,6 +721,13 @@ bool XboxStreamSession::negotiateWebRtc(const StreamProfile& profile,
     if (answer.empty() || isCancelled(callbacks)) {
         lunar::diagnosticLog("xbox-stream", "SDP answer empty or cancelled");
         return false;
+    }
+    if (profile.type == SessionType::Cloud && profile.cloud_microphone_enabled) {
+        cloud_microphone_negotiated_ =
+            offer.find("a=ssrc:6 cname:lunarnx-cloud-mic") != std::string::npos &&
+            cloudAnswerAcceptsMicrophone(answer);
+        lunar::persistentEventLog("cloud-mic", "SDP upstream permitted=%s",
+                                  cloud_microphone_negotiated_ ? "true" : "false");
     }
     transport_.setRemoteAnswer(answer);
 
@@ -1009,11 +1022,20 @@ void XboxStreamSession::runLoop(StreamProfile profile,
     std::string reconnect_reason = "connection-state";
     auto next_network_tick = std::chrono::steady_clock::now();
     auto next_rumble_tick = next_network_tick;
+    stream::CloudMicrophone microphone;
+    bool mic_attempted = false;
+    bool mic_started = false;
+    uint32_t mic_sent = 0;
+    uint32_t mic_send_failed = 0;
+    auto last_mic_log = next_network_tick;
 #if LUNARNX_DROP_DIAGNOSTIC_LOG
     auto last_webrtc_pump = std::chrono::steady_clock::time_point{};
 #endif
     auto cancel = [this, callbacks]() { return isCancelled(callbacks); };
     auto request_fresh_reconnect = [&](const char* reason) {
+        microphone.stop();
+        mic_started = false;
+        mic_attempted = false;
         reconnect_reason = reason ? reason : "connection-state";
         if (!reconnect_prepared) {
             prepareFreshSessionReconnect(reconnect_reason.c_str());
@@ -1130,6 +1152,52 @@ void XboxStreamSession::runLoop(StreamProfile profile,
             request_fresh_reconnect("data-channel-send-failure");
         }
         const bool connected = transport_.isConnected();
+        const bool mic_allowed = profile.type == SessionType::Cloud &&
+            profile.cloud_microphone_enabled && cloud_microphone_negotiated_;
+        const bool mic_transport_ready = transport_.isAudioUplinkReady();
+        if (mic_started && (!mic_transport_ready || !mic_allowed)) {
+            microphone.stop();
+            mic_started = false;
+            mic_attempted = false;
+            lunar::persistentEventLog("cloud-mic", "capture stopped: transport unavailable");
+        }
+        if (mic_transport_ready && control_started && mic_allowed && !mic_attempted) {
+            mic_attempted = true;
+            std::string reason;
+            mic_started = microphone.start(reason);
+            if (mic_started) {
+                mic_sent = 0;
+                mic_send_failed = 0;
+                last_mic_log = std::chrono::steady_clock::now();
+            }
+            lunar::persistentEventLog("cloud-mic", mic_started
+                ? "capture started: 48kHz stereo Opus 20ms"
+                : "capture unavailable: %s", reason.c_str());
+        }
+        if (mic_started && mic_transport_ready) {
+            // libpeer's SRTP/socket state is owned by this thread alone.
+            // Keep the drain bounded to preserve input/video latency.
+            for (int i = 0; i < 3; ++i) {
+                std::vector<uint8_t> packet;
+                if (!microphone.takePacket(packet)) break;
+                if (transport_.sendAudioPacket(packet.data(), packet.size())) {
+                    ++mic_sent;
+                } else {
+                    ++mic_send_failed;
+                }
+            }
+            const auto mic_now = std::chrono::steady_clock::now();
+            if (mic_now - last_mic_log >= std::chrono::seconds(5)) {
+                last_mic_log = mic_now;
+                const auto stats = microphone.stats();
+                lunar::persistentEventLog(
+                    "cloud-mic",
+                    "mic| encoded=%u sent=%u send_failed=%u queue_drop=%u "
+                    "capture_err=%u peak=%u",
+                    stats.encoded, mic_sent, mic_send_failed,
+                    stats.dropped, stats.capture_errors, stats.peak);
+            }
+        }
         if (!connected && input_delivery_ready_.exchange(false)) {
             input_accumulator_.prepareForReconnect();
         }

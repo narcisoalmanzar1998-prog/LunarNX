@@ -342,6 +342,7 @@ std::shared_ptr<app::StreamController> AuthActivity::createConfiguredController(
     const auto stream_settings = loadStreamSettings();
     ctrl->setDefaultVideoBackend(stream_settings.video_backend);
     ctrl->setRumbleEnabled(stream_settings.vibration_enabled);
+    ctrl->setCloudMicrophoneEnabled(stream_settings.cloud_microphone_enabled);
     ctrl->setRumbleStrengthPercent(stream_settings.rumble_strength_percent);
 
     // Check config.json for mock Xbox base URL (for local testing).

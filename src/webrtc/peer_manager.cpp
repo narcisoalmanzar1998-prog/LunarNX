@@ -157,6 +157,7 @@ void PeerManager::onIceCandidate(char* sdp_text, void* userdata) {
 
 void PeerManager::onIceStateChange(PeerConnectionState state, void* userdata) {
     auto* self = static_cast<PeerManager*>(userdata);
+    self->audio_uplink_ready_ = state == PEER_CONNECTION_COMPLETED;
     fprintf(stderr, "[webrtc] ICE state: %d (%s)\n", state,
             peer_connection_state_to_string(state));
     lunar::diagnosticLog("webrtc", "ICE state: %d (%s)",
@@ -386,6 +387,7 @@ bool PeerManager::initialize() {
     initialized_ = true;
     local_candidates_.clear();
     connected_ = false;
+    audio_uplink_ready_ = false;
     data_channels_created_ = false;
     successful_ice_server_url_.clear();
     video_callback_logs_ = 0;
@@ -499,6 +501,11 @@ void PeerManager::setRemoteAnswer(const std::string& sdp) {
     logRemoteMediaDescription(sdp);
     peer_connection_set_remote_description(pc_, sdp.c_str(), SDP_TYPE_ANSWER);
     lunar::diagnosticLog("webrtc", "set remote answer returned");
+}
+
+bool PeerManager::sendAudioPacket(const uint8_t* opus, size_t len) {
+    return pc_ && audio_uplink_ready_.load() && opus && len > 0 &&
+           peer_connection_send_audio(pc_, opus, len) == 0;
 }
 
 std::vector<IceCandidate> PeerManager::getLocalCandidates() {
@@ -1581,6 +1588,7 @@ void PeerManager::disconnect() {
                          static_cast<void*>(pc_),
                          initialized_ ? "true" : "false");
     connected_ = false;
+    audio_uplink_ready_ = false;
     resetDataChannelHealth();
     clearOutboundCommands();
     if (pc_) {

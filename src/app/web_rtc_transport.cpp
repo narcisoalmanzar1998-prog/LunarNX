@@ -295,4 +295,12 @@ void WebRtcTransport::disconnect() {
     }
 }
 
+bool WebRtcTransport::sendAudioPacket(const uint8_t* opus, size_t len) {
+    return peer_ && peer_->sendAudioPacket(opus, len);
+}
+
+bool WebRtcTransport::isAudioUplinkReady() const {
+    return peer_ && peer_->isAudioUplinkReady();
+}
+
 } // namespace lunar::app

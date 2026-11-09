@@ -98,6 +98,8 @@ public:
     StreamPlatform getStreamPlatform() const override { return StreamPlatform::Xbox; }
     void setRumbleEnabled(bool enabled);
     bool getRumbleEnabled() const { return rumble_enabled_.load(); }
+    void setCloudMicrophoneEnabled(bool enabled);
+    bool getCloudMicrophoneEnabled() const { return cloud_microphone_enabled_.load(); }
     void setRumbleStrengthPercent(int percent);
     int getRumbleStrengthPercent() const {
         return rumble_strength_percent_.load();
@@ -165,6 +167,7 @@ private:
     std::atomic<bool> mock_mode_{false};
     std::atomic<stream::VideoBackend> default_video_backend_{stream::VideoBackend::HardwareZeroCopy};
     std::atomic<bool> rumble_enabled_{true};
+    std::atomic<bool> cloud_microphone_enabled_{false};
     std::atomic<int> rumble_strength_percent_{50};
     stream::PerfStats perf_;
     int stream_width_ = 1280;

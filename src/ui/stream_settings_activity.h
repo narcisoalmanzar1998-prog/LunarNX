@@ -19,6 +19,7 @@ struct StreamSettingsSnapshot {
     stream::PostProcessMode post_process_mode = stream::PostProcessMode::Off;
     bool dithering_enabled = false;
     bool vibration_enabled = true;
+    bool cloud_microphone_enabled = false;
     int rumble_strength_percent = 50;
 };
 

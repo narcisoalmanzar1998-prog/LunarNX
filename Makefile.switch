@@ -184,6 +184,7 @@ CXX_SRCS = src/main.cpp lib/qrcodegen/qrcodegen.cpp src/app/ice_candidate_proces
     src/webrtc/xbox_input_feedback.cpp \
     src/stream/stream_backend_provider.cpp src/stream/media_pipeline.cpp \
     src/stream/audio_packet_reorder.cpp \
+    src/stream/cloud_microphone.cpp \
     src/stream/video_decoder.cpp src/stream/audio_decoder.cpp src/stream/video_renderer.cpp \
     src/stream/software_video_frame.cpp \
     src/stream/audio_player.cpp src/stream/av_sync.cpp
