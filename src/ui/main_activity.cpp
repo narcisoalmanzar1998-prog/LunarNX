@@ -76,9 +76,11 @@ MainActivity::MainActivity(std::shared_ptr<app::StreamController> ctrl) : ctrl_(
     post_process_mode_ = saved.post_process_mode;
     dithering_enabled_ = saved.dithering_enabled;
     vibration_enabled_ = saved.vibration_enabled;
+    cloud_microphone_enabled_ = saved.cloud_microphone_enabled;
     rumble_strength_percent_ = saved.rumble_strength_percent;
     ctrl_->setDefaultVideoBackend(video_backend_);
     ctrl_->setRumbleEnabled(vibration_enabled_);
+    ctrl_->setCloudMicrophoneEnabled(cloud_microphone_enabled_);
     ctrl_->setRumbleStrengthPercent(rumble_strength_percent_);
     ctrl_->setPreferredGameLanguage(
         resolvePreferredGameLanguage(preferred_game_language_));
@@ -375,6 +377,7 @@ void MainActivity::openStreamSettings() {
     snapshot.post_process_mode = post_process_mode_;
     snapshot.dithering_enabled = dithering_enabled_;
     snapshot.vibration_enabled = vibration_enabled_;
+    snapshot.cloud_microphone_enabled = cloud_microphone_enabled_;
     snapshot.rumble_strength_percent = rumble_strength_percent_;
 
     auto alive = alive_;
@@ -395,6 +398,8 @@ void MainActivity::openStreamSettings() {
                 post_process_mode_ = updated.post_process_mode;
                 dithering_enabled_ = updated.dithering_enabled;
                 vibration_enabled_ = updated.vibration_enabled;
+                cloud_microphone_enabled_ = updated.cloud_microphone_enabled;
+                ctrl_->setCloudMicrophoneEnabled(cloud_microphone_enabled_);
                 rumble_strength_percent_ = updated.rumble_strength_percent;
                 if (status_) {
                     status_->setText(brls::getStr(

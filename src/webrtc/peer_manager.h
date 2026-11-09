@@ -137,6 +137,9 @@ public:
     bool sendLatestInputData(const uint8_t* data, size_t len);
     bool sendControlData(const uint8_t* data, size_t len);
     bool sendMessageData(const uint8_t* data, size_t len);
+    // Call only from the WebRTC owner loop, never from the audin worker.
+    bool sendAudioPacket(const uint8_t* opus, size_t len);
+    bool isAudioUplinkReady() const { return audio_uplink_ready_.load(); }
     bool requestVideoKeyframe();
     bool sendReceiverFeedback(uint32_t bitrate_bps);
     bool hasPendingReliableData() const;
@@ -190,6 +193,7 @@ private:
     PeerConnection* pc_ = nullptr;
     PeerCallbacks callbacks_;
     std::atomic<bool> connected_{false};
+    std::atomic<bool> audio_uplink_ready_{false};
     bool initialized_ = false;
     bool data_channels_created_ = false;
     std::string preferred_ice_server_url_;

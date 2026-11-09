@@ -127,6 +127,12 @@ void StreamController::setRumbleEnabled(bool enabled) {
                          enabled ? "true" : "false");
 }
 
+void StreamController::setCloudMicrophoneEnabled(bool enabled) {
+    cloud_microphone_enabled_.store(enabled);
+    lunar::diagnosticLog("stream-controller", "cloud microphone enabled=%s",
+                         enabled ? "true" : "false");
+}
+
 void StreamController::setRumbleStrengthPercent(int percent) {
     percent = std::clamp(percent, 0, 100);
     rumble_strength_percent_.store(percent);
@@ -929,6 +935,7 @@ bool StreamController::startCloudStream(const std::string& title_id,
                                         int bitrate_kbps) {
     StreamProfile profile = makeCloudStreamProfile(
         title_id, width, height, bitrate_kbps);
+    profile.cloud_microphone_enabled = cloud_microphone_enabled_.load();
     profile.locale = getPreferredGameLanguage();
     return startStreamWithProfile(profile, options);
 }
